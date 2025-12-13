@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AWS Amplify + Cognito Hosted UI</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/6.0.0/aws-amplify.min.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "aws-amplify": "https://cdn.jsdelivr.net/npm/aws-amplify@6.0.0/+esm",
+            "aws-amplify/auth": "https://cdn.jsdelivr.net/npm/aws-amplify@6.0.0/auth/+esm"
+        }
+    }
+    </script>
     <style>
         * {
             margin: 0;
@@ -239,7 +246,7 @@
                     <li>アプリクライアントの<code>コールバックURL</code>を追加<br>
                     <code>http://localhost:8080/</code> または<br>
                     <code>https://your-app.amplifyapp.com/</code></li>
-                    <li>下記の設定値を更新してください</li>
+                    <li>下記のスクリプト内の設定値を更新してください</li>
                 </ol>
             </div>
         </div>
@@ -263,8 +270,13 @@
         </div>
     </div>
 
-    <script>
-        // Amplify設定（実際の値に置き換えてください）
+    <script type="module">
+        import { Amplify } from 'aws-amplify';
+        import { signInWithRedirect, signOut, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
+
+        // ========================================
+        // ⚙️ ここを編集してください
+        // ========================================
         const amplifyConfig = {
             Auth: {
                 Cognito: {
@@ -282,15 +294,16 @@
                 }
             }
         };
+        // ========================================
 
         let currentUser = null;
 
         // Amplify初期化
         try {
-            const { Amplify } = window.aws_amplify;
             Amplify.configure(amplifyConfig);
+            console.log('✅ Amplify設定完了');
         } catch (error) {
-            console.error('Amplify設定エラー:', error);
+            console.error('❌ Amplify設定エラー:', error);
             showMessage('❌ Amplify設定エラー: ' + error.message, 'error');
         }
 
@@ -301,36 +314,36 @@
         }
 
         // Hosted UIログイン
-        async function handleHostedUILogin() {
+        window.handleHostedUILogin = async function() {
             // 設定チェック
             if (amplifyConfig.Auth.Cognito.userPoolId === 'YOUR_USER_POOL_ID') {
-                showMessage('⚠️ 設定値を更新してください。下記の手順を参照してください。', 'error');
+                showMessage('⚠️ 設定値を更新してください。スクリプト内のamplifyConfigを編集してください。', 'error');
                 return;
             }
 
             try {
-                const { signInWithRedirect } = window.aws_amplify;
+                console.log('🔐 ログイン開始...');
                 await signInWithRedirect();
             } catch (error) {
-                console.error('ログインエラー:', error);
+                console.error('❌ ログインエラー:', error);
                 showMessage('❌ ログインエラー: ' + error.message, 'error');
             }
-        }
+        };
 
         // ログアウト
-        async function handleLogout() {
+        window.handleLogout = async function() {
             try {
-                const { signOut } = window.aws_amplify;
+                console.log('👋 ログアウト開始...');
                 await signOut();
                 currentUser = null;
                 document.getElementById('welcomeScreen').classList.add('hidden');
                 document.getElementById('loginScreen').classList.remove('hidden');
                 showMessage('✅ ログアウトしました', 'success');
             } catch (error) {
-                console.error('ログアウトエラー:', error);
+                console.error('❌ ログアウトエラー:', error);
                 showMessage('❌ ログアウトエラー: ' + error.message, 'error');
             }
-        }
+        };
 
         // ユーザー情報表示
         function displayUserInfo(attributes) {
@@ -343,14 +356,14 @@
             if (attributes.sub) {
                 infoHTML += `<p><strong>User ID:</strong> ${attributes.sub}</p>`;
             }
-            if (attributes.email_verified) {
-                infoHTML += `<p><strong>メール確認:</strong> ${attributes.email_verified === 'true' ? '✅ 済' : '❌ 未'}</p>`;
+            if (attributes.email_verified !== undefined) {
+                infoHTML += `<p><strong>メール確認:</strong> ${attributes.email_verified ? '✅ 済' : '❌ 未'}</p>`;
             }
             if (attributes.name) {
                 infoHTML += `<p><strong>名前:</strong> ${attributes.name}</p>`;
             }
             
-            userInfoEl.innerHTML = infoHTML;
+            userInfoEl.innerHTML = infoHTML || '<p>ユーザー情報を取得できませんでした</p>';
             
             // ログイン時刻を表示
             const now = new Date();
@@ -360,14 +373,16 @@
         // 認証状態チェック
         async function checkAuthState() {
             try {
-                const { getCurrentUser, fetchUserAttributes } = window.aws_amplify;
+                console.log('🔍 認証状態チェック中...');
                 
                 // 現在のユーザーを取得
                 currentUser = await getCurrentUser();
+                console.log('👤 ユーザー取得成功:', currentUser);
                 
                 if (currentUser) {
                     // ユーザー属性を取得
                     const attributes = await fetchUserAttributes();
+                    console.log('📋 属性取得成功:', attributes);
                     
                     // ウェルカム画面を表示
                     document.getElementById('loginScreen').classList.add('hidden');
@@ -376,7 +391,7 @@
                 }
             } catch (error) {
                 // ログインしていない場合
-                console.log('未ログイン状態:', error.message);
+                console.log('ℹ️ 未ログイン状態:', error.message);
                 document.getElementById('loginScreen').classList.remove('hidden');
                 document.getElementById('welcomeScreen').classList.add('hidden');
             }
@@ -387,6 +402,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             
             if (urlParams.has('code')) {
+                console.log('🔄 OAuthコールバック検出');
                 showMessage('🔄 認証処理中...', 'info');
                 
                 // URLをクリーンアップ
@@ -395,7 +411,7 @@
                 // 少し待ってから認証状態をチェック
                 setTimeout(() => {
                     checkAuthState();
-                }, 1000);
+                }, 1500);
             } else {
                 checkAuthState();
             }
@@ -403,6 +419,7 @@
 
         // 初期化
         window.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 アプリケーション起動');
             handleOAuthCallback();
         });
     </script>
