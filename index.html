@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World - AWS Amplify</title>
+    <title>AWS Amplify + Cognito Hosted UI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/6.0.0/aws-amplify.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -12,25 +13,30 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            padding: 1rem;
         }
 
         .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 3rem;
+            max-width: 500px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
             text-align: center;
-            padding: 2rem;
-            animation: fadeIn 1s ease-in;
         }
 
-        @keyframes fadeIn {
+        @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
@@ -38,183 +44,367 @@
             }
         }
 
-        h1 {
+        .logo {
             font-size: 4rem;
-            color: white;
             margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-            animation: bounce 1s ease-in-out infinite alternate;
         }
 
-        @keyframes bounce {
-            from {
-                transform: translateY(0px);
-            }
-            to {
-                transform: translateY(-10px);
-            }
+        h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
         }
 
         .subtitle {
-            font-size: 1.5rem;
-            color: rgba(255, 255, 255, 0.9);
+            color: #666;
             margin-bottom: 2rem;
+            font-size: 0.95rem;
         }
 
-        .badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            padding: 0.75rem 1.5rem;
-            border-radius: 50px;
-            color: white;
-            font-weight: 500;
-            margin-top: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .badge:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
-        }
-
-        .circles {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .btn {
             width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem 0;
+            display: inline-block;
+            text-decoration: none;
         }
 
-        .circles li {
-            position: absolute;
-            display: block;
-            list-style: none;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9ff;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .info {
+            background: #eef;
+            color: #33c;
+            border: 1px solid #ccf;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .user-info {
+            background: #f8f9ff;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+
+        .user-info h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .user-info p {
+            color: #555;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .user-info strong {
+            color: #333;
+        }
+
+        .welcome-message {
+            background: #e8f5e9;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            border: 2px solid #4caf50;
+        }
+
+        .welcome-message p {
+            color: #2e7d32;
+            margin: 0.75rem 0;
+            font-size: 1rem;
+        }
+
+        .welcome-message strong {
+            font-weight: 700;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
             width: 20px;
             height: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            animation: animate 25s linear infinite;
-            bottom: -150px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
         }
 
-        .circles li:nth-child(1) {
-            left: 25%;
-            width: 80px;
-            height: 80px;
-            animation-delay: 0s;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        .circles li:nth-child(2) {
-            left: 10%;
-            width: 20px;
-            height: 20px;
-            animation-delay: 2s;
-            animation-duration: 12s;
+        .config-section {
+            background: #f8f9ff;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            text-align: left;
+            font-size: 0.85rem;
         }
 
-        .circles li:nth-child(3) {
-            left: 70%;
-            width: 20px;
-            height: 20px;
-            animation-delay: 4s;
+        .config-section code {
+            background: #fff;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #667eea;
         }
 
-        .circles li:nth-child(4) {
-            left: 40%;
-            width: 60px;
-            height: 60px;
-            animation-delay: 0s;
-            animation-duration: 18s;
+        .config-section ol {
+            margin: 1rem 0 1rem 1.5rem;
         }
 
-        .circles li:nth-child(5) {
-            left: 65%;
-            width: 20px;
-            height: 20px;
-            animation-delay: 0s;
-        }
-
-        .circles li:nth-child(6) {
-            left: 75%;
-            width: 110px;
-            height: 110px;
-            animation-delay: 3s;
-        }
-
-        .circles li:nth-child(7) {
-            left: 35%;
-            width: 150px;
-            height: 150px;
-            animation-delay: 7s;
-        }
-
-        .circles li:nth-child(8) {
-            left: 50%;
-            width: 25px;
-            height: 25px;
-            animation-delay: 15s;
-            animation-duration: 45s;
-        }
-
-        .circles li:nth-child(9) {
-            left: 20%;
-            width: 15px;
-            height: 15px;
-            animation-delay: 2s;
-            animation-duration: 35s;
-        }
-
-        .circles li:nth-child(10) {
-            left: 85%;
-            width: 150px;
-            height: 150px;
-            animation-delay: 0s;
-            animation-duration: 11s;
-        }
-
-        @keyframes animate {
-            0% {
-                transform: translateY(0) rotate(0deg);
-                opacity: 1;
-                border-radius: 0;
-            }
-            100% {
-                transform: translateY(-1000px) rotate(720deg);
-                opacity: 0;
-                border-radius: 50%;
-            }
+        .config-section li {
+            margin: 0.5rem 0;
+            color: #555;
         }
 
         @media (max-width: 768px) {
-            h1 {
-                font-size: 2.5rem;
+            .container {
+                padding: 2rem;
             }
-            .subtitle {
-                font-size: 1.2rem;
+            h1 {
+                font-size: 1.5rem;
             }
         }
     </style>
 </head>
 <body>
-    <ul class="circles">
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-        <li></li>
-    </ul>
-
     <div class="container">
-        <h1>Hello World! 👋</h1>
-        <p class="subtitle">AWS Amplifyへようこそ</p>
-        <div class="badge">🚀 Serverless Application</div>
+        <div id="loginScreen">
+            <div class="logo">🔐</div>
+            <h1>AWS Cognito</h1>
+            <p class="subtitle">Hosted UIを使用した認証</p>
+            
+            <div id="message"></div>
+            
+            <button class="btn" onclick="handleHostedUILogin()">
+                Cognitoでログイン
+            </button>
+            
+            <div class="config-section">
+                <strong>⚙️ 設定が必要です</strong>
+                <ol>
+                    <li>Cognitoユーザープールの<code>ドメイン</code>を設定</li>
+                    <li>アプリクライアントの<code>コールバックURL</code>を追加<br>
+                    <code>http://localhost:8080/</code> または<br>
+                    <code>https://your-app.amplifyapp.com/</code></li>
+                    <li>下記の設定値を更新してください</li>
+                </ol>
+            </div>
+        </div>
+
+        <div id="welcomeScreen" class="hidden">
+            <div class="logo">🎉</div>
+            <h1>ログインできたよ！</h1>
+            <p class="subtitle">認証に成功しました</p>
+            
+            <div class="user-info">
+                <h3>👤 ユーザー情報</h3>
+                <p id="userInfo">読み込み中...</p>
+            </div>
+
+            <div class="welcome-message">
+                <p>✅ ログイン状態: <strong style="color: #3c3;">認証済み</strong></p>
+                <p>🕐 ログイン時刻: <span id="loginTime"></span></p>
+            </div>
+            
+            <button class="btn" onclick="handleLogout()">ログアウト</button>
+        </div>
     </div>
+
+    <script>
+        // Amplify設定（実際の値に置き換えてください）
+        const amplifyConfig = {
+            Auth: {
+                Cognito: {
+                    userPoolId: 'ap-northeast-1_f3sFcAFGS',              // 例: ap-northeast-1_abcdefghi
+                    userPoolClientId: '1h1evf4409fl7q06j4ubr19176',           // 例: 1234567890abcdefghij
+                    loginWith: {
+                        oauth: {
+                            domain: 'https://ap-northeast-1f3sfcafgs.auth.ap-northeast-1.amazoncognito.com',        // 例: myapp.auth.ap-northeast-1.amazoncognito.com
+                            scopes: ['openid', 'email', 'profile'],
+                            redirectSignIn: ['http://localhost:8080/'], // 開発環境
+                            redirectSignOut: ['http://localhost:8080/'], // 開発環境
+                            responseType: 'code'
+                        }
+                    }
+                }
+            }
+        };
+
+        let currentUser = null;
+
+        // Amplify初期化
+        try {
+            const { Amplify } = window.aws_amplify;
+            Amplify.configure(amplifyConfig);
+        } catch (error) {
+            console.error('Amplify設定エラー:', error);
+            showMessage('❌ Amplify設定エラー: ' + error.message, 'error');
+        }
+
+        // メッセージ表示
+        function showMessage(message, type = 'info') {
+            const el = document.getElementById('message');
+            el.innerHTML = `<div class="message ${type}">${message}</div>`;
+        }
+
+        // Hosted UIログイン
+        async function handleHostedUILogin() {
+            // 設定チェック
+            if (amplifyConfig.Auth.Cognito.userPoolId === 'YOUR_USER_POOL_ID') {
+                showMessage('⚠️ 設定値を更新してください。下記の手順を参照してください。', 'error');
+                return;
+            }
+
+            try {
+                const { signInWithRedirect } = window.aws_amplify;
+                await signInWithRedirect();
+            } catch (error) {
+                console.error('ログインエラー:', error);
+                showMessage('❌ ログインエラー: ' + error.message, 'error');
+            }
+        }
+
+        // ログアウト
+        async function handleLogout() {
+            try {
+                const { signOut } = window.aws_amplify;
+                await signOut();
+                currentUser = null;
+                document.getElementById('welcomeScreen').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+                showMessage('✅ ログアウトしました', 'success');
+            } catch (error) {
+                console.error('ログアウトエラー:', error);
+                showMessage('❌ ログアウトエラー: ' + error.message, 'error');
+            }
+        }
+
+        // ユーザー情報表示
+        function displayUserInfo(attributes) {
+            const userInfoEl = document.getElementById('userInfo');
+            let infoHTML = '';
+            
+            if (attributes.email) {
+                infoHTML += `<p><strong>Email:</strong> ${attributes.email}</p>`;
+            }
+            if (attributes.sub) {
+                infoHTML += `<p><strong>User ID:</strong> ${attributes.sub}</p>`;
+            }
+            if (attributes.email_verified) {
+                infoHTML += `<p><strong>メール確認:</strong> ${attributes.email_verified === 'true' ? '✅ 済' : '❌ 未'}</p>`;
+            }
+            if (attributes.name) {
+                infoHTML += `<p><strong>名前:</strong> ${attributes.name}</p>`;
+            }
+            
+            userInfoEl.innerHTML = infoHTML;
+            
+            // ログイン時刻を表示
+            const now = new Date();
+            document.getElementById('loginTime').textContent = now.toLocaleString('ja-JP');
+        }
+
+        // 認証状態チェック
+        async function checkAuthState() {
+            try {
+                const { getCurrentUser, fetchUserAttributes } = window.aws_amplify;
+                
+                // 現在のユーザーを取得
+                currentUser = await getCurrentUser();
+                
+                if (currentUser) {
+                    // ユーザー属性を取得
+                    const attributes = await fetchUserAttributes();
+                    
+                    // ウェルカム画面を表示
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('welcomeScreen').classList.remove('hidden');
+                    displayUserInfo(attributes);
+                }
+            } catch (error) {
+                // ログインしていない場合
+                console.log('未ログイン状態:', error.message);
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('welcomeScreen').classList.add('hidden');
+            }
+        }
+
+        // URLパラメータからコードを処理（OAuth リダイレクト後）
+        async function handleOAuthCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.has('code')) {
+                showMessage('🔄 認証処理中...', 'info');
+                
+                // URLをクリーンアップ
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // 少し待ってから認証状態をチェック
+                setTimeout(() => {
+                    checkAuthState();
+                }, 1000);
+            } else {
+                checkAuthState();
+            }
+        }
+
+        // 初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            handleOAuthCallback();
+        });
+    </script>
 </body>
 </html>
