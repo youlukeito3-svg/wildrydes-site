@@ -4,9 +4,35 @@
   <meta charset="UTF-8">
   <title>Hello World App</title>
   <link rel="stylesheet" href="style.css">
+
+<script src="https://unpkg.com/aws-amplify@latest/dist/aws-amplify.min.js"></script>
+<script src="https://unpkg.com/@aws-amplify/ui-components@latest/dist/aws-amplify-ui-components.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@aws-amplify/ui-components@latest/dist/style.css">
+
+<script>
+  const awsconfig = {
+    Auth: {
+      region: "ap-northeast-1",
+      userPoolId: "ap-northeast-1_ap-northeast-1_S4sQuHPiO",
+      userPoolWebClientId: "561vc9n52ljvko32d3lvrul4nc"
+    }
+  };
+
+  Amplify.default.configure(awsconfig);
+</script>
+
 </head>
 <body>
   <h1>Hello World!</h1>
   <p>これは AWS Amplify でホストされたサーバーレスWebアプリです。テスト</p>
+
+<amplify-authenticator>
+  <div>
+    <h1>Hello World!</h1>
+    <p>ログイン済みのユーザーだけがこのページを見られます。</p>
+    <amplify-sign-out></amplify-sign-out>
+  </div>
+</amplify-authenticator>
+
 </body>
 </html>
